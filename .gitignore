@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# env files (never commit secrets)
+.env
+.env.local
+backend/.env
+frontend/.env
+
+# build output
+dist/
+build/
+frontend/dist/
+backend/dist/
+
+# logs
+npm-debug.log*
+*.log
+
+# OS/editor
+.DS_Store
+Thumbs.db
+
+# docker
+docker-compose.override.yml
+
+# prisma
+backend/prisma/dev.db
