@@ -1,15 +1,23 @@
 import express from "express";
 import cors from "cors";
+import { sessionMiddleware } from "./session.js";
+import { authRouter } from "./modules/auth/routes.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 export function createApp() {
   const app = express();
 
   app.use(cors({ origin: process.env.CORS_ORIGIN ?? true, credentials: true }));
   app.use(express.json());
+  app.use(sessionMiddleware);
 
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
   });
+
+  app.use("/api/auth", authRouter);
+
+  app.use(errorHandler);
 
   return app;
 }

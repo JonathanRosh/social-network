@@ -40,7 +40,7 @@ Full technical design (schema DDL, API endpoint list, Docker Compose layout, rea
 
 ## Status
 
-**Phase 0 and Phase 1 done. Currently starting Phase 2 (DB schema & migrations).**
+**Phases 0-3 done. Currently starting Phase 4 (user profiles).**
 
 - [x] Phase 0: fixed the stray home-dir `.git`, reinitialized scoped to project (branch `main`). GitHub repo created by user: https://github.com/JonathanRosh/social-network — remote wired, initial commit pushed.
 - [x] Phase 1: scaffolding & Docker skeleton.
@@ -60,6 +60,15 @@ Full technical design (schema DDL, API endpoint list, Docker Compose layout, rea
   - Backend `Dockerfile` rewritten: copies `prisma/` before `npm install` (so `@prisma/client`'s postinstall `prisma generate` has the schema available), copies full `node_modules` (incl. dev deps like the `prisma` CLI) into the runtime stage for simplicity, and `CMD` runs `npx prisma migrate deploy && node dist/index.js` — so `docker compose up` always ends with an up-to-date schema with zero manual steps.
   - Verified end-to-end via `docker compose up --build -d backend frontend`: backend logs show migrations applying/no-op correctly against the `postgres` service, health check passes through the nginx proxy.
   - `backend/.env` created locally (gitignored) with `DATABASE_URL` pointing at `localhost:5432` — needed so the Prisma CLI can run migrations from the host while the containerized backend uses `postgres:5432` (the in-network service name) via the root `.env`. Two different URLs for the same underlying database, by design.
+- [x] Phase 3: Auth (register/login/logout, sessions).
+  - `backend/src/session.ts`: `express-session` + `connect-pg-simple` (auto-creates the `session` table at startup). Module augmentation adds `userId?: string` to `SessionData`.
+  - `backend/src/modules/auth/`: `schema.ts` (Zod, normalizes username/email to lowercase and trims), `service.ts` (`registerUser`/`verifyCredentials`/`getUserById`/`toSessionUser`, bcryptjs with 12 salt rounds, Prisma `P2002` unique-violation caught and turned into a friendly 409), `controller.ts`, `routes.ts` mounted at `/api/auth` (`POST /register`, `POST /login`, `POST /logout`, `GET /me`).
+  - Password hashing uses **bcryptjs** (pure JS), not native `bcrypt` — deliberately, to avoid native-addon build issues cross-compiling for the Alpine Docker image; a well-established substitute at this scale.
+  - `middleware/requireAuth.ts` (401s if no `session.userId`), `middleware/validate.ts` (Zod body validation), `middleware/errorHandler.ts` (maps `ZodError`→400, `HttpError`→its status, else 500), `utils/errors.ts` (`HttpError`), `utils/asyncHandler.ts`.
+  - **Bug caught and fixed during Docker verification**: the session cookie's `secure` flag was originally tied to `NODE_ENV === 'production'`. `express-session` silently refuses to ever set the cookie when `secure: true` over a non-HTTPS connection — and this whole stack runs over plain HTTP (Docker Compose on localhost, no TLS anywhere), so every login appeared to "succeed" (200 + user JSON) but no session was ever established, and the next request 401'd. Fixed by decoupling this into its own `COOKIE_SECURE` env var (default `false`, documented in `.env.example` and `docker-compose.yml`), independent of `NODE_ENV`. **If this project is ever deployed behind real HTTPS, `COOKIE_SECURE` must be set to `true`** — flag this prominently in the README's security section during phase 10.
+  - Targeted test: `backend/tests/requireAuth.test.ts` (no session → 401 + no `next()`; valid session → calls `next()`). Run with `npm test` from `backend/`.
+  - Verified end-to-end twice: directly against `tsx` dev server on the host, and through the full `docker compose up` stack via the nginx proxy at `localhost:3000` (register, duplicate-email 409, `/me`, logout, `/me` after logout → 401, login with right/wrong password, validation-error 400 on bad input). Session cookie and `session` table confirmed working through Docker only after the `COOKIE_SECURE` fix.
+  - Any test users created during manual verification were deleted from the DB afterward; the `postgres` container is left running between phases for fast iteration, `backend`/`frontend` are stopped after each verification pass.
 
 ## Notes / gotchas for future sessions
 
