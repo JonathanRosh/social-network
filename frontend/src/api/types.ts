@@ -78,3 +78,25 @@ export interface FeedPage {
   posts: FeedPost[];
   nextCursor: FeedCursor | null;
 }
+
+export interface CommentAuthor {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+export interface Comment {
+  id: string;
+  postId: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  author: CommentAuthor;
+}
+
+export interface CommentsPage {
+  comments: Comment[];
+  nextCursor: FeedCursor | null;
+}

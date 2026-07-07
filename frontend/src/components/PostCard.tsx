@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as postsApi from "../api/posts.js";
 import type { Post, PostVisibility } from "../api/types.js";
+import { CommentSection } from "./CommentSection.js";
 
 const visibilityLabel: Record<PostVisibility, string> = {
   public: "Public",
@@ -24,6 +25,7 @@ export function PostCard({ post, isOwn, authorUsername, authorDisplayName }: Pos
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(post.content);
   const [visibility, setVisibility] = useState<PostVisibility>(post.visibility);
+  const [showComments, setShowComments] = useState(false);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["posts", authorUsername] });
@@ -114,7 +116,12 @@ export function PostCard({ post, isOwn, authorUsername, authorDisplayName }: Pos
         <span>{visibilityLabel[post.visibility]}</span>
         <span>·</span>
         <span>{new Date(post.createdAt).toLocaleString()}</span>
+        <span>·</span>
+        <button type="button" onClick={() => setShowComments((v) => !v)} className="hover:text-gray-700">
+          {showComments ? "Hide comments" : "Comments"}
+        </button>
       </div>
+      {showComments && <CommentSection postId={post.id} />}
     </div>
   );
 }
