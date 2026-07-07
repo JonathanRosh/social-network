@@ -8,11 +8,41 @@ export interface SessionUser {
   createdAt: string;
 }
 
-export interface PublicProfile {
+export type RelationshipStatus = "self" | "friends" | "pending_outgoing" | "pending_incoming" | "none";
+
+export interface BasicProfile {
   id: string;
   username: string;
   displayName: string;
   bio: string | null;
   avatarUrl: string | null;
   createdAt: string;
+}
+
+/** GET /api/users/:username also tells the viewer their relationship to this user. */
+export interface PublicProfile extends BasicProfile {
+  relationship: RelationshipStatus;
+  friendshipId: string | null;
+}
+
+export interface Friendship {
+  id: string;
+  requesterId: string;
+  addresseeId: string;
+  status: "pending" | "accepted" | "declined" | "cancelled";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FriendRequest {
+  id: string;
+  createdAt: string;
+}
+
+export interface IncomingFriendRequest extends FriendRequest {
+  from: BasicProfile;
+}
+
+export interface OutgoingFriendRequest extends FriendRequest {
+  to: BasicProfile;
 }

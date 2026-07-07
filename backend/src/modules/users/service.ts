@@ -1,5 +1,6 @@
 import type { User } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
+import { getRelationshipStatus } from "../friends/service.js";
 
 /** Shape returned for someone else's profile — never includes email. */
 export function toPublicProfile(user: User) {
@@ -13,10 +14,15 @@ export function toPublicProfile(user: User) {
   };
 }
 
-export async function getPublicProfile(username: string) {
+export async function getPublicProfile(username: string, viewerId: string) {
   const user = await prisma.user.findUnique({ where: { username: username.trim().toLowerCase() } });
   if (!user) return null;
-  return toPublicProfile(user);
+  const relationship = await getRelationshipStatus(viewerId, user.id);
+  return {
+    ...toPublicProfile(user),
+    relationship: relationship.status,
+    friendshipId: relationship.friendshipId,
+  };
 }
 
 export async function updateProfile(

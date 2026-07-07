@@ -1,11 +1,10 @@
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getProfile } from "../api/users.js";
-import { useAuth } from "../context/AuthContext.js";
+import { FriendActionButton } from "../components/FriendActionButton.js";
 
 export function ProfilePage() {
   const { username } = useParams<{ username: string }>();
-  const { user: currentUser } = useAuth();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["profile", username],
@@ -22,7 +21,7 @@ export function ProfilePage() {
   }
 
   const { user } = data;
-  const isOwnProfile = currentUser?.username === user.username;
+  const isOwnProfile = user.relationship === "self";
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
@@ -32,13 +31,15 @@ export function ProfilePage() {
             <h1 className="text-xl font-semibold text-gray-900">{user.displayName}</h1>
             <p className="text-sm text-gray-500">@{user.username}</p>
           </div>
-          {isOwnProfile && (
+          {isOwnProfile ? (
             <Link
               to="/profile/me/edit"
               className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               Edit profile
             </Link>
+          ) : (
+            <FriendActionButton profile={user} />
           )}
         </div>
         {user.bio && <p className="mt-4 whitespace-pre-wrap text-gray-700">{user.bio}</p>}

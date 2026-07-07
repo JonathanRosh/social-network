@@ -6,6 +6,7 @@ import { RegisterPage } from "./pages/RegisterPage.js";
 import { HomePage } from "./pages/HomePage.js";
 import { ProfilePage } from "./pages/ProfilePage.js";
 import { EditProfilePage } from "./pages/EditProfilePage.js";
+import { FriendsPage } from "./pages/FriendsPage.js";
 
 function App() {
   return (
@@ -35,6 +36,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/friends"
+          element={
+            <ProtectedRoute>
+              <FriendsPage />
             </ProtectedRoute>
           }
         />

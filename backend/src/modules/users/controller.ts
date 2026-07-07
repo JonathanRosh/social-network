@@ -4,7 +4,7 @@ import { toSessionUser } from "../auth/service.js";
 import { getPublicProfile, updateProfile } from "./service.js";
 
 export const getProfile = asyncHandler(async (req, res) => {
-  const profile = await getPublicProfile(req.params.username);
+  const profile = await getPublicProfile(req.params.username, req.session.userId!);
   if (!profile) {
     throw new HttpError(404, "User not found");
   }
