@@ -40,7 +40,7 @@ Full technical design (schema DDL, API endpoint list, Docker Compose layout, rea
 
 ## Status
 
-**Phases 0-6 done. Currently starting Phase 7 (feed + pagination).**
+**Phases 0-7 done. Currently starting Phase 8 (comments + realtime).**
 
 - [x] Phase 0: fixed the stray home-dir `.git`, reinitialized scoped to project (branch `main`). GitHub repo created by user: https://github.com/JonathanRosh/social-network — remote wired, initial commit pushed.
 - [x] Phase 1: scaffolding & Docker skeleton.
@@ -90,6 +90,13 @@ Full technical design (schema DDL, API endpoint list, Docker Compose layout, rea
   - Frontend: `src/api/posts.ts`, `src/components/PostComposer.tsx` (visibility selector inline), `src/components/PostCard.tsx` (inline edit mode, delete, only rendered with edit/delete controls when `isOwn`), wired into `ProfilePage` (composer shown only on your own profile, posts list is the visibility-filtered response from the backend — the frontend does no additional filtering, it just renders what the API returns).
   - Verified end-to-end via curl through both the dev server and the full `docker compose` stack: created public/private posts, confirmed a stranger's `GET .../posts` only returns the public one, confirmed a non-author `PATCH` 403s, and confirmed fetching a private post by ID as a non-author returns 404 (not 403) — all matched the intended design exactly.
   - Added demo posts (public + private) for the existing `gina`/`hank` demo accounts so posts are visible in the UI too when browsing `localhost:3000`.
+- [x] Phase 7: Feed + cursor pagination.
+  - `backend/src/modules/feed/service.ts`: `getFeed(viewerId, cursor, limit)` — visibility clause is `authorId = viewer OR visibility = public OR (visibility = friends AND authorId IN friendIds)`; cursor clause is a compound `(createdAt, id) < (cursorCreatedAt, cursorId)` tuple comparison **decomposed into a plain Prisma `OR`** (`createdAt < X` OR `createdAt = X AND id < Y`) rather than a raw SQL query — Prisma has no native tuple comparator, but this OR-decomposition is a fully type-safe equivalent, so raw SQL wasn't needed after all (simpler than what the original design doc assumed). Fetches `limit + 1` rows to detect `hasMore` without a separate count query.
+  - Chose cursor-based (not offset) pagination specifically because this is a *live* feed receiving concurrent inserts — offset pagination would duplicate or skip items as new posts land between page fetches; cursor pagination is immune to that by construction.
+  - **Security note worth remembering**: the feed query does `include: { author: { select: {...} } }` with an **explicit field select** (id/username/displayName/avatarUrl only) rather than `include: { author: true }` — the latter would have serialized the full `User` row, including `passwordHash` and `email`, straight into the JSON response. Apply the same explicit-select pattern anywhere else a relation is included in a response (comments' authors in phase 8, messages' senders in phase 11).
+  - Route: `GET /api/feed?cursorCreatedAt=&cursorId=&limit=` (both cursor params required together or omitted together, validated by a new `validateQuery` middleware added to `middleware/validate.ts` alongside the existing `validateBody`).
+  - Verified end-to-end via curl (through both the dev server and the full docker stack): a friend correctly sees the post author's public+friends-only posts but not their private one; the author's own feed includes their private post; two-page pagination with `limit=2` produces no duplicates and no gaps across pages, `nextCursor: null` on the last page.
+  - Frontend: `src/api/feed.ts`, `HomePage` rewritten to use React Query's `useInfiniteQuery` + an `IntersectionObserver` sentinel div for infinite scroll (the concrete pattern from the plan). `PostCard`/`PostComposer` generalized to work in both the profile-page context (single author, no header shown) and the feed context (`authorDisplayName` prop shown as a linked header per post) rather than building a separate feed-specific card component — both now invalidate both `["posts", username]` and `["feed"]` query keys on any mutation so edits/deletes/new posts stay in sync across whichever view the user is on.
 
 ## Notes / gotchas for future sessions
 

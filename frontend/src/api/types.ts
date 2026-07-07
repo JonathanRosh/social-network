@@ -57,3 +57,24 @@ export interface Post {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface FeedAuthor {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+export interface FeedPost extends Post {
+  author: FeedAuthor;
+}
+
+export interface FeedCursor {
+  createdAt: string;
+  id: string;
+}
+
+export interface FeedPage {
+  posts: FeedPost[];
+  nextCursor: FeedCursor | null;
+}

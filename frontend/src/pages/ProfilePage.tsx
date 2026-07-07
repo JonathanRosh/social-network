@@ -62,7 +62,7 @@ export function ProfilePage() {
       <div className="space-y-4">
         {postsQuery.data?.posts.length ? (
           postsQuery.data.posts.map((post) => (
-            <PostCard key={post.id} post={post} isOwn={isOwnProfile} username={user.username} />
+            <PostCard key={post.id} post={post} isOwn={isOwnProfile} authorUsername={user.username} />
           ))
         ) : (
           <p className="text-center text-sm text-gray-500">No posts yet.</p>

@@ -13,6 +13,7 @@ export function PostComposer({ username }: { username: string }) {
     onSuccess: () => {
       setContent("");
       queryClient.invalidateQueries({ queryKey: ["posts", username] });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
     },
   });
 

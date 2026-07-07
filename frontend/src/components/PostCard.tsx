@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as postsApi from "../api/posts.js";
 import type { Post, PostVisibility } from "../api/types.js";
@@ -9,14 +10,24 @@ const visibilityLabel: Record<PostVisibility, string> = {
   private: "Private",
 };
 
-export function PostCard({ post, isOwn, username }: { post: Post; isOwn: boolean; username: string }) {
+interface PostCardProps {
+  post: Post;
+  isOwn: boolean;
+  /** Username this post belongs to — used to invalidate that profile's post list. */
+  authorUsername: string;
+  /** When provided, renders an author header linking to their profile (feed context). */
+  authorDisplayName?: string;
+}
+
+export function PostCard({ post, isOwn, authorUsername, authorDisplayName }: PostCardProps) {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(post.content);
   const [visibility, setVisibility] = useState<PostVisibility>(post.visibility);
 
   function invalidate() {
-    queryClient.invalidateQueries({ queryKey: ["posts", username] });
+    queryClient.invalidateQueries({ queryKey: ["posts", authorUsername] });
+    queryClient.invalidateQueries({ queryKey: ["feed"] });
   }
 
   const updateMutation = useMutation({
@@ -76,6 +87,11 @@ export function PostCard({ post, isOwn, username }: { post: Post; isOwn: boolean
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
+      {authorDisplayName && (
+        <Link to={`/profile/${authorUsername}`} className="mb-2 block text-sm font-medium text-gray-900 hover:underline">
+          {authorDisplayName} <span className="font-normal text-gray-500">@{authorUsername}</span>
+        </Link>
+      )}
       <div className="flex items-start justify-between">
         <p className="whitespace-pre-wrap text-sm text-gray-900">{post.content}</p>
         {isOwn && (
