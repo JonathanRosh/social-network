@@ -1,23 +1,44 @@
-import { useEffect, useState } from "react";
-
-type HealthStatus = "checking" | "ok" | "error";
+import { Routes, Route } from "react-router-dom";
+import { Navbar } from "./components/Navbar.js";
+import { ProtectedRoute } from "./components/ProtectedRoute.js";
+import { LoginPage } from "./pages/LoginPage.js";
+import { RegisterPage } from "./pages/RegisterPage.js";
+import { HomePage } from "./pages/HomePage.js";
+import { ProfilePage } from "./pages/ProfilePage.js";
+import { EditProfilePage } from "./pages/EditProfilePage.js";
 
 function App() {
-  const [backendStatus, setBackendStatus] = useState<HealthStatus>("checking");
-
-  useEffect(() => {
-    fetch("/api/health")
-      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
-      .then(() => setBackendStatus("ok"))
-      .catch(() => setBackendStatus("error"));
-  }, []);
-
   return (
-    <div className="min-h-svh flex items-center justify-center bg-gray-50">
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-semibold text-gray-900">Real-Time Social Network</h1>
-        <p className="text-gray-500">Scaffolding phase — backend status: {backendStatus}</p>
-      </div>
+    <div className="min-h-svh bg-gray-50">
+      <Navbar />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/me/edit"
+          element={
+            <ProtectedRoute>
+              <EditProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/:username"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </div>
   );
 }

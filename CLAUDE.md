@@ -40,7 +40,7 @@ Full technical design (schema DDL, API endpoint list, Docker Compose layout, rea
 
 ## Status
 
-**Phases 0-3 done. Currently starting Phase 4 (user profiles).**
+**Phases 0-4 done. Currently starting Phase 5 (friends system).**
 
 - [x] Phase 0: fixed the stray home-dir `.git`, reinitialized scoped to project (branch `main`). GitHub repo created by user: https://github.com/JonathanRosh/social-network — remote wired, initial commit pushed.
 - [x] Phase 1: scaffolding & Docker skeleton.
@@ -69,6 +69,11 @@ Full technical design (schema DDL, API endpoint list, Docker Compose layout, rea
   - Targeted test: `backend/tests/requireAuth.test.ts` (no session → 401 + no `next()`; valid session → calls `next()`). Run with `npm test` from `backend/`.
   - Verified end-to-end twice: directly against `tsx` dev server on the host, and through the full `docker compose up` stack via the nginx proxy at `localhost:3000` (register, duplicate-email 409, `/me`, logout, `/me` after logout → 401, login with right/wrong password, validation-error 400 on bad input). Session cookie and `session` table confirmed working through Docker only after the `COOKIE_SECURE` fix.
   - Any test users created during manual verification were deleted from the DB afterward; the `postgres` container is left running between phases for fast iteration, `backend`/`frontend` are stopped after each verification pass.
+- [x] Phase 4: User profiles.
+  - Backend `backend/src/modules/users/`: `GET /api/users/:username` (public profile, requires auth, excludes email — verified via curl that the response never includes an `email` field), `PATCH /api/users/me` (owner-only by construction: it only ever operates on `req.session.userId`, so there is no route at all that could edit someone else's profile — no separate ownership-check needed for this one). Fields editable: `displayName`, `bio`, `avatarUrl`; username/email/password changes are out of scope (not required by the assignment).
+  - Frontend: `src/api/` (typed `apiFetch` wrapper with `credentials: "include"`, `auth.ts`, `users.ts`, shared `types.ts`), `src/context/AuthContext.tsx` (wraps a React Query `["me"]` query + login/register/logout mutations, matches the "React Query for server state" decision), `src/components/ProtectedRoute.tsx` + `Navbar.tsx`, `src/pages/`: `LoginPage`, `RegisterPage`, `HomePage` (placeholder until phase 7's feed), `ProfilePage` (view by username, shows "Edit profile" link only when `currentUser.username === viewedUsername`), `EditProfilePage`. Routes wired in `App.tsx`, providers (`QueryClientProvider` → `BrowserRouter` → `AuthProvider`) wired in `main.tsx`.
+  - Hit and fixed a frontend TS build error: `erasableSyntaxOnly: true` in the Vite-generated `tsconfig.app.json` disallows TS constructor parameter-property shorthand (`constructor(public status: number)`) since it's not purely-erasable syntax — rewrote `ApiError` in `src/api/client.ts` with an explicit field + assignment instead. Keep this in mind for any future class in frontend code.
+  - **No browser automation/screenshot tool is available in this environment** — UI correctness was verified as thoroughly as possible without one: `tsc -b && vite build` succeeds, and the full data path (Vite dev server → its `/api` proxy → backend → Postgres) was exercised end-to-end with curl (register, `/me`, profile fetch, no-email-leak check) both against the raw dev servers and through the real `docker compose` stack. The actual rendered UI/UX has **not** been visually confirmed by the AI — the user was told the stack was left running at `localhost:3000` to click through themselves. Flag this limitation again at the end of phase 10 as a reminder to do a manual visual pass before submission.
 
 ## Notes / gotchas for future sessions
 
