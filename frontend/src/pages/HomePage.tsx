@@ -1,13 +1,17 @@
 import { useEffect, useRef } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { getFeed } from "../api/feed.js";
-import type { FeedCursor } from "../api/types.js";
+import type { FeedCursor, FeedPost } from "../api/types.js";
 import { useAuth } from "../context/AuthContext.js";
+import { useSocket } from "../context/SocketContext.js";
+import { prependFeedPost } from "../utils/feedCache.js";
 import { PostComposer } from "../components/PostComposer.js";
 import { PostCard } from "../components/PostCard.js";
 
 export function HomePage() {
   const { user } = useAuth();
+  const socket = useSocket();
+  const queryClient = useQueryClient();
 
   const query = useInfiniteQuery({
     queryKey: ["feed"],
@@ -30,6 +34,23 @@ export function HomePage() {
     observer.observe(el);
     return () => observer.disconnect();
   }, [query.hasNextPage, query.isFetchingNextPage, query.fetchNextPage]);
+
+  // Live feed updates: the server already fans post:created out only to
+  // whoever is allowed to see it (see backend/src/modules/posts/controller.ts),
+  // so the client just needs to splice it in — same dedupe-by-id approach as
+  // comments, so a duplicate delivery (e.g. reconnect) is a no-op.
+  useEffect(() => {
+    if (!socket) return;
+
+    function onPostCreated(post: FeedPost) {
+      prependFeedPost(queryClient, post);
+    }
+
+    socket.on("post:created", onPostCreated);
+    return () => {
+      socket.off("post:created", onPostCreated);
+    };
+  }, [socket, queryClient]);
 
   if (!user) return null;
 

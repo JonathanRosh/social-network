@@ -1,13 +1,23 @@
-import type { Post, PostVisibility } from "@prisma/client";
+import { Prisma, type Post, type PostVisibility } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { HttpError } from "../../utils/errors.js";
 import { areFriends } from "../friends/service.js";
 
-export async function createPost(
-  authorId: string,
-  data: { content: string; visibility: PostVisibility },
-): Promise<Post> {
-  return prisma.post.create({ data: { authorId, ...data } });
+const postAuthorSelect = {
+  id: true,
+  username: true,
+  displayName: true,
+  avatarUrl: true,
+} satisfies Prisma.UserSelect;
+
+export async function createPost(authorId: string, data: { content: string; visibility: PostVisibility }) {
+  // Includes the author (safe fields only) so the realtime post:created
+  // payload and the REST response both already match the feed's shape —
+  // no extra round trip needed on either the emitting client or recipients.
+  return prisma.post.create({
+    data: { authorId, ...data },
+    include: { author: { select: postAuthorSelect } },
+  });
 }
 
 /** Whether viewerId is allowed to see this post, given its visibility and author. */
