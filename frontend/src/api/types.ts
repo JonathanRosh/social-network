@@ -46,3 +46,14 @@ export interface IncomingFriendRequest extends FriendRequest {
 export interface OutgoingFriendRequest extends FriendRequest {
   to: BasicProfile;
 }
+
+export type PostVisibility = "public" | "friends" | "private";
+
+export interface Post {
+  id: string;
+  authorId: string;
+  content: string;
+  visibility: PostVisibility;
+  createdAt: string;
+  updatedAt: string;
+}

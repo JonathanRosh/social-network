@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "../../middleware/requireAuth.js";
 import { validateBody } from "../../middleware/validate.js";
 import { updateProfileSchema } from "./schema.js";
-import { getProfile, updateMe } from "./controller.js";
+import { getProfile, updateMe, getUserPosts } from "./controller.js";
 
 export const usersRouter = Router();
 
@@ -10,3 +10,4 @@ export const usersRouter = Router();
 // shadowed, though Express also disambiguates by HTTP method here anyway.
 usersRouter.patch("/me", requireAuth, validateBody(updateProfileSchema), updateMe);
 usersRouter.get("/:username", requireAuth, getProfile);
+usersRouter.get("/:username/posts", requireAuth, getUserPosts);

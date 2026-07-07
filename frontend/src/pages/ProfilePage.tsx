@@ -1,7 +1,10 @@
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getProfile } from "../api/users.js";
+import { listUserPosts } from "../api/posts.js";
 import { FriendActionButton } from "../components/FriendActionButton.js";
+import { PostComposer } from "../components/PostComposer.js";
+import { PostCard } from "../components/PostCard.js";
 
 export function ProfilePage() {
   const { username } = useParams<{ username: string }>();
@@ -9,6 +12,12 @@ export function ProfilePage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["profile", username],
     queryFn: () => getProfile(username!),
+    enabled: !!username,
+  });
+
+  const postsQuery = useQuery({
+    queryKey: ["posts", username],
+    queryFn: () => listUserPosts(username!),
     enabled: !!username,
   });
 
@@ -24,7 +33,7 @@ export function ProfilePage() {
   const isOwnProfile = user.relationship === "self";
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
       <div className="rounded-lg border border-gray-200 bg-white p-6">
         <div className="flex items-start justify-between">
           <div>
@@ -46,6 +55,18 @@ export function ProfilePage() {
         <p className="mt-4 text-xs text-gray-400">
           Joined {new Date(user.createdAt).toLocaleDateString()}
         </p>
+      </div>
+
+      {isOwnProfile && <PostComposer username={user.username} />}
+
+      <div className="space-y-4">
+        {postsQuery.data?.posts.length ? (
+          postsQuery.data.posts.map((post) => (
+            <PostCard key={post.id} post={post} isOwn={isOwnProfile} username={user.username} />
+          ))
+        ) : (
+          <p className="text-center text-sm text-gray-500">No posts yet.</p>
+        )}
       </div>
     </div>
   );

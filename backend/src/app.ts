@@ -4,6 +4,7 @@ import { sessionMiddleware } from "./session.js";
 import { authRouter } from "./modules/auth/routes.js";
 import { usersRouter } from "./modules/users/routes.js";
 import { friendsRouter } from "./modules/friends/routes.js";
+import { postsRouter } from "./modules/posts/routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 export function createApp() {
@@ -20,6 +21,7 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/users", usersRouter);
   app.use("/api/friends", friendsRouter);
+  app.use("/api/posts", postsRouter);
 
   app.use(errorHandler);
 

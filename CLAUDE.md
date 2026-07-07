@@ -40,7 +40,7 @@ Full technical design (schema DDL, API endpoint list, Docker Compose layout, rea
 
 ## Status
 
-**Phases 0-5 done. Currently starting Phase 6 (posts + visibility).**
+**Phases 0-6 done. Currently starting Phase 7 (feed + pagination).**
 
 - [x] Phase 0: fixed the stray home-dir `.git`, reinitialized scoped to project (branch `main`). GitHub repo created by user: https://github.com/JonathanRosh/social-network — remote wired, initial commit pushed.
 - [x] Phase 1: scaffolding & Docker skeleton.
@@ -83,6 +83,13 @@ Full technical design (schema DDL, API endpoint list, Docker Compose layout, rea
   - Frontend: `src/api/friends.ts` + new types in `src/api/types.ts` (`Friendship`, `BasicProfile` vs `PublicProfile` — the latter adds `relationship`/`friendshipId`, only returned by the single-profile endpoint, not by the friends/requests list endpoints), `src/components/FriendActionButton.tsx` (renders Add/Cancel/Accept+Decline/Remove based on `profile.relationship`, used on `ProfilePage`), `src/pages/FriendsPage.tsx` (incoming requests, sent requests, friends list, each with their action button), `/friends` route + navbar link.
   - Verified end-to-end via curl through both the raw dev server and the full `docker compose` stack: send → duplicate-rejected → wrong-user-can't-accept (403) → correct-user accepts → both sides' friend lists populated → remove → list empties. All matched expectations exactly.
   - Left two demo accounts in the dev DB deliberately this time (unlike prior phases where test data was cleaned up): `gina`/`hank`, password `password123`, with a pending friend request from gina to hank — so the user can log in at `localhost:3000` and visually see phase 5 working, since the AI still cannot verify rendered UI itself.
+- [x] Phase 6: Posts + visibility.
+  - `backend/src/modules/posts/service.ts`: `createPost`, `updatePost`/`deletePost` (author-only, 403 otherwise), `canViewPost(viewerId, post)` (public → anyone; private → author only; friends → author or `areFriends()` from the friends module), `getViewablePostOrThrow` (returns **404, not 403**, when a post exists but isn't visible to the viewer — deliberate: a 403 would leak that a private/friends-only post exists at all), `listUserPosts(username, viewerId)` (pushes the visibility filter into the Prisma `where` clause directly rather than filtering in application code — computes the viewer/author friendship once, not per-post, since it's the same pair for every post in the list).
+  - Routes: `POST/GET/PATCH/DELETE /api/posts[/:id]`, plus `GET /api/users/:username/posts` added to the users router (imports `listUserPosts` from the posts module — controller-level cross-module import, not a service-level cycle).
+  - **Targeted tests**: `backend/tests/posts.visibility.test.ts` — 4 tests, same real-Postgres integration style as the friends tests, covering all three visibility levels across owner/friend/stranger viewers plus the aggregate `listUserPosts` filtering. All pass (14 tests total now across the suite).
+  - Frontend: `src/api/posts.ts`, `src/components/PostComposer.tsx` (visibility selector inline), `src/components/PostCard.tsx` (inline edit mode, delete, only rendered with edit/delete controls when `isOwn`), wired into `ProfilePage` (composer shown only on your own profile, posts list is the visibility-filtered response from the backend — the frontend does no additional filtering, it just renders what the API returns).
+  - Verified end-to-end via curl through both the dev server and the full `docker compose` stack: created public/private posts, confirmed a stranger's `GET .../posts` only returns the public one, confirmed a non-author `PATCH` 403s, and confirmed fetching a private post by ID as a non-author returns 404 (not 403) — all matched the intended design exactly.
+  - Added demo posts (public + private) for the existing `gina`/`hank` demo accounts so posts are visible in the UI too when browsing `localhost:3000`.
 
 ## Notes / gotchas for future sessions
 
