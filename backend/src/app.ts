@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { sessionMiddleware } from "./session.js";
 import { authRouter } from "./modules/auth/routes.js";
 import { usersRouter } from "./modules/users/routes.js";
@@ -12,6 +13,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 export function createApp() {
   const app = express();
 
+  app.use(helmet());
   app.use(cors({ origin: process.env.CORS_ORIGIN ?? true, credentials: true }));
   app.use(express.json());
   app.use(sessionMiddleware);

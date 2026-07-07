@@ -60,6 +60,8 @@ export function HomePage() {
     <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
       <PostComposer username={user.username} />
 
+      {query.isLoading && <p className="text-center text-sm text-gray-500">Loading feed…</p>}
+
       {posts.length === 0 && !query.isLoading && (
         <p className="text-center text-sm text-gray-500">
           No posts yet. Add some friends or create your first post above.

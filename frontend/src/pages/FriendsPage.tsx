@@ -50,7 +50,9 @@ export function FriendsPage() {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-gray-500">No incoming requests.</p>
+          <p className="text-sm text-gray-500">
+            {requestsQuery.isLoading ? "Loading…" : "No incoming requests."}
+          </p>
         )}
       </section>
 
@@ -74,7 +76,9 @@ export function FriendsPage() {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-gray-500">No sent requests.</p>
+          <p className="text-sm text-gray-500">
+            {requestsQuery.isLoading ? "Loading…" : "No sent requests."}
+          </p>
         )}
       </section>
 
@@ -98,7 +102,9 @@ export function FriendsPage() {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-gray-500">No friends yet.</p>
+          <p className="text-sm text-gray-500">
+            {friendsQuery.isLoading ? "Loading…" : "No friends yet."}
+          </p>
         )}
       </section>
     </div>

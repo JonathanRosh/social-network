@@ -40,7 +40,7 @@ Full technical design (schema DDL, API endpoint list, Docker Compose layout, rea
 
 ## Status
 
-**Phases 0-9 done — the entire core (non-bonus) build is complete. Currently starting Phase 10 (polish, README, ERD, security pass).**
+**Phases 0-10 done — the entire assignment's core requirements are complete and submission-ready.** Only the optional Phase 11 bonus (private messaging) remains, time-permitting.
 
 - [x] Phase 0: fixed the stray home-dir `.git`, reinitialized scoped to project (branch `main`). GitHub repo created by user: https://github.com/JonathanRosh/social-network — remote wired, initial commit pushed.
 - [x] Phase 1: scaffolding & Docker skeleton.
@@ -112,6 +112,12 @@ Full technical design (schema DDL, API endpoint list, Docker Compose layout, rea
   - **Verified the actual visibility-scoped fan-out end-to-end** with a throwaway `socket.io-client` script through the full docker+nginx stack (three users: two friends + one stranger) — a friends-only post reached the friend but not the stranger; a subsequent public post from the same author reached both. This is the concrete "no duplicate events, correct ordering, and correctly scoped" requirement from the assignment, actually exercised rather than assumed.
   - Frontend: `src/utils/feedCache.ts` (`prependFeedPost` — dedupes against every already-loaded page, not just the first, then prepends into page one of the `useInfiniteQuery` cache), wired into `HomePage` via a `post:created` socket listener alongside the existing `IntersectionObserver` infinite-scroll logic from phase 7.
   - Backend test suite re-run after this phase's changes: still 16/16 passing (no regressions from the `createPost` return-shape change).
+- [x] Phase 10: Polish, README, ERD, security pass.
+  - **Security hardening**: `helmet()` added to the Express app (standard security headers — CSP, X-Frame-Options, etc.). `express-rate-limit` added to `/api/auth/register` and `/api/auth/login` specifically (20 req/15min per IP) to blunt brute-force attempts — the only endpoints that made sense to rate-limit given the timeline. Verified both don't break the existing auth flow (register/login/`/me` all still 2xx through the full docker stack with the new middleware active).
+  - **README.md** written at repo root: tech stack + rationale table, one-command setup instructions, architecture diagram (ASCII, same-origin proxy topology explained), full Mermaid ER diagram (renders natively on GitHub, no image-generation tooling needed — this was a deliberate simplification over the original design doc's Prisma-ERD-export plan), the DB design rationale and enforcement-split table (lifted from this file, cleaned up for an external reader), full API reference table, real-time design explanation, testing instructions, a dedicated Security notes section (including the `COOKIE_SECURE`/HTTPS caveat from phase 3, prominently flagged as promised back then), and a Known Limitations section. `frontend/README.md` (leftover Vite boilerplate) replaced with a one-line pointer to the root README.
+  - **Loading-state polish**: `HomePage` now shows "Loading feed…" during the initial fetch instead of a blank gap; `FriendsPage`'s three empty-state messages ("No incoming requests" etc.) now correctly distinguish "still loading" from "genuinely empty" instead of flashing the empty-state text before data arrives.
+  - **Full clean-slate verification** (the most important check of this phase): ran `docker compose down -v` (with explicit user confirmation, since this deletes the demo data — asked first) then a completely fresh `docker compose up --build` from zero state — no cached volume, no prior containers. Confirmed both migrations apply cleanly to the brand-new database, all three containers reach healthy, and a full register → friend-request → accept → post → feed flow works correctly on the very first run. This is exactly what a grader cloning the repo fresh would experience, and it was verified rather than assumed. Backend test suite re-run against this fresh DB too: still 16/16.
+  - Recreated the `gina`/`hank` demo accounts (same credentials, `password123`) with a public post and an accepted friendship afterward, so `localhost:3000` still has something to look at.
 
 ## Notes / gotchas for future sessions
 
