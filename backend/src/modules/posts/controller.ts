@@ -8,22 +8,18 @@ export const createPost = asyncHandler(async (req, res) => {
   res.status(201).json({ post });
 
   // Fan out after responding — doesn't block the requester on socket work.
-  // Audience mirrors the feed's own visibility rule exactly:
-  //   public  -> every connected client (visibility genuinely means "anyone")
-  //   friends -> the author's accepted friends' personal rooms
-  //   private -> nobody but the author
-  // The author's own room is always included so their other open tabs/
-  // sessions pick up the new post immediately too.
+  // Audience mirrors the feed's own composition rule exactly (see
+  // feed/service.ts): a public post still isn't broadcast to strangers, only
+  // to friends + the author — a stranger only ever sees it by visiting the
+  // author's profile directly, same as with any other visibility level.
   const io = getIo();
-  if (post.visibility === "public") {
-    io.emit("post:created", post);
-  } else if (post.visibility === "friends") {
+  if (post.visibility === "private") {
+    io.to(`user:${post.authorId}`).emit("post:created", post);
+  } else {
     const friendIds = await getAcceptedFriendIds(post.authorId);
     for (const friendId of friendIds) {
       io.to(`user:${friendId}`).emit("post:created", post);
     }
-    io.to(`user:${post.authorId}`).emit("post:created", post);
-  } else {
     io.to(`user:${post.authorId}`).emit("post:created", post);
   }
 });

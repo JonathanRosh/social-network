@@ -17,11 +17,14 @@ const feedAuthorSelect = {
 export async function getFeed(viewerId: string, cursor: FeedCursor | null, limit: number) {
   const friendIds = await getAcceptedFriendIds(viewerId);
 
+  // Feed composition is deliberately narrower than post *visibility*: a
+  // stranger's public post is viewable if you visit their profile directly,
+  // but it should NOT be pushed into your personalized feed — only your own
+  // posts and your friends' posts belong there, per the assignment spec.
   const visibilityWhere: Prisma.PostWhereInput = {
     OR: [
       { authorId: viewerId },
-      { visibility: "public" },
-      { visibility: "friends", authorId: { in: friendIds } },
+      { authorId: { in: friendIds }, visibility: { in: ["public", "friends"] } },
     ],
   };
 
