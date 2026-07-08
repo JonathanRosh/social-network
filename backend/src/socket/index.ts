@@ -3,6 +3,7 @@ import type { IncomingMessage } from "node:http";
 import { Server } from "socket.io";
 import { sessionMiddleware } from "../session.js";
 import { getViewablePostOrThrow } from "../modules/posts/service.js";
+import { getConversationOrThrow } from "../modules/messages/service.js";
 
 interface RequestWithSession extends IncomingMessage {
   session?: { userId?: string };
@@ -57,6 +58,29 @@ export function initSocket(httpServer: HttpServer): Server {
     socket.on("post:leave", (postId: unknown) => {
       if (typeof postId === "string") {
         socket.leave(`post:${postId}`);
+      }
+    });
+
+    // Same pattern as post:join — only an actual participant can join a
+    // conversation's room, re-checked on every join rather than trusted
+    // from whenever the conversation was first created.
+    socket.on("conversation:join", async (conversationId: unknown, ack?: (ok: boolean) => void) => {
+      if (typeof conversationId !== "string") {
+        ack?.(false);
+        return;
+      }
+      try {
+        await getConversationOrThrow(conversationId, userId);
+        socket.join(`conversation:${conversationId}`);
+        ack?.(true);
+      } catch {
+        ack?.(false);
+      }
+    });
+
+    socket.on("conversation:leave", (conversationId: unknown) => {
+      if (typeof conversationId === "string") {
+        socket.leave(`conversation:${conversationId}`);
       }
     });
   });

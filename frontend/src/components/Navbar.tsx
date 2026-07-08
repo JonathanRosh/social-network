@@ -17,6 +17,9 @@ export function Navbar() {
           <Link to="/friends" className="text-gray-700 hover:text-gray-900">
             Friends
           </Link>
+          <Link to="/messages" className="text-gray-700 hover:text-gray-900">
+            Messages
+          </Link>
           <Link to={`/profile/${user.username}`} className="text-gray-700 hover:text-gray-900">
             {user.displayName}
           </Link>

@@ -8,6 +8,7 @@ import { friendsRouter } from "./modules/friends/routes.js";
 import { postsRouter } from "./modules/posts/routes.js";
 import { feedRouter } from "./modules/feed/routes.js";
 import { commentsRouter } from "./modules/comments/routes.js";
+import { messagesRouter } from "./modules/messages/routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 export function createApp() {
@@ -28,6 +29,7 @@ export function createApp() {
   app.use("/api/posts", postsRouter);
   app.use("/api/feed", feedRouter);
   app.use("/api/comments", commentsRouter);
+  app.use("/api/messages", messagesRouter);
 
   app.use(errorHandler);
 

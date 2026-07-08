@@ -7,6 +7,8 @@ import { HomePage } from "./pages/HomePage.js";
 import { ProfilePage } from "./pages/ProfilePage.js";
 import { EditProfilePage } from "./pages/EditProfilePage.js";
 import { FriendsPage } from "./pages/FriendsPage.js";
+import { MessagesPage } from "./pages/MessagesPage.js";
+import { ConversationPage } from "./pages/ConversationPage.js";
 
 function App() {
   return (
@@ -44,6 +46,22 @@ function App() {
           element={
             <ProtectedRoute>
               <FriendsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <ProtectedRoute>
+              <MessagesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/messages/:conversationId"
+          element={
+            <ProtectedRoute>
+              <ConversationPage />
             </ProtectedRoute>
           }
         />

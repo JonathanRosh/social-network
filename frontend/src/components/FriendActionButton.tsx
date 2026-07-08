@@ -1,5 +1,7 @@
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as friendsApi from "../api/friends.js";
+import * as messagesApi from "../api/messages.js";
 import type { PublicProfile } from "../api/types.js";
 
 const buttonClass = "rounded-md px-3 py-1.5 text-sm font-medium";
@@ -8,6 +10,7 @@ const secondaryClass = `${buttonClass} border border-gray-300 text-gray-700 hove
 
 export function FriendActionButton({ profile }: { profile: PublicProfile }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["profile", profile.username] });
@@ -34,6 +37,10 @@ export function FriendActionButton({ profile }: { profile: PublicProfile }) {
   const removeMutation = useMutation({
     mutationFn: () => friendsApi.removeFriend(profile.id),
     onSuccess: invalidate,
+  });
+  const messageMutation = useMutation({
+    mutationFn: () => messagesApi.startConversation(profile.id),
+    onSuccess: ({ conversation }) => navigate(`/messages/${conversation.id}`),
   });
 
   if (profile.relationship === "self") return null;
@@ -69,8 +76,18 @@ export function FriendActionButton({ profile }: { profile: PublicProfile }) {
 
   // relationship === "friends"
   return (
-    <button type="button" className={secondaryClass} disabled={removeMutation.isPending} onClick={() => removeMutation.mutate()}>
-      {removeMutation.isPending ? "Removing…" : "Remove friend"}
-    </button>
+    <div className="flex gap-2">
+      <button
+        type="button"
+        className={primaryClass}
+        disabled={messageMutation.isPending}
+        onClick={() => messageMutation.mutate()}
+      >
+        Message
+      </button>
+      <button type="button" className={secondaryClass} disabled={removeMutation.isPending} onClick={() => removeMutation.mutate()}>
+        {removeMutation.isPending ? "Removing…" : "Remove friend"}
+      </button>
+    </div>
   );
 }

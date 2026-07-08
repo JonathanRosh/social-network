@@ -1,6 +1,6 @@
 # Real-Time Social Network
 
-A full-stack social network built for a take-home assignment: authenticated users, a mutual friends graph, posts with three-tier visibility, a personalized real-time feed (plus a public "Discover" feed for finding new people), and live comments.
+A full-stack social network built for a take-home assignment: authenticated users, a mutual friends graph, posts with three-tier visibility, a personalized real-time feed (plus a public "Discover" feed for finding new people), live comments, and private real-time 1:1 messaging between friends (the assignment's bonus feature).
 
 ## Tech stack
 
@@ -205,6 +205,7 @@ Socket.IO authenticates using the **same session cookie as REST** — `io.engine
 - **Comments**: a client joins a `post:<id>` room only while actively viewing that post's comment thread (expanding "Comments" on a post), not for every post in a feed at once. The server re-runs the same visibility check used everywhere else before allowing the join, so a private post's comment stream can't be peeked at just by knowing its ID.
 - **New posts, two feeds**: the frontend has two tabs on the home page — **Friends** (the assignment's required feed: your own + your friends' posts, cursor-paginated) and **Discover** (every public post from anyone, added specifically so there's a way to find new people to friend without already knowing their username — not required by the assignment, but a real gap without it). Each has its own realtime event, so a public post from a friend correctly lands in both of their feeds and a stranger's public post only ever reaches Discover: `post:created` is emitted to the author's accepted friends' personal rooms (+ the author's own room) for any non-private post; `post:created:public` is additionally broadcast to every connected client, but only when the post is actually public.
 - **No duplicate events, correct ordering.** Every emitted entity carries its real database ID and a server-authoritative `createdAt`. The frontend never trusts socket arrival order — every update (from a REST response *or* a socket event) goes through the same dedupe-by-id-then-resort merge (`frontend/src/utils/commentsCache.ts`, `feedCache.ts`). The server doesn't special-case "don't echo to the sender" — it always emits to everyone in the room including the author, and the client's dedupe makes that a safe no-op. This also correctly handles the same user having multiple tabs open.
+- **Messaging (bonus)**: same pattern as comments — a client joins `conversation:<id>` only while that thread is open, the server re-checks the socket's owner is an actual participant on every join, and friendship is re-checked on every message *send* too (not just when the conversation was first created), so messaging stops working immediately if two people un-friend each other, even in an already-existing conversation.
 - **Single instance.** No Redis adapter — not needed at this scale, and out of scope for a take-home assignment. The next step for horizontal scaling would be a Redis-backed Socket.IO adapter.
 
 ## API Reference
@@ -236,8 +237,12 @@ All routes below are prefixed with `/api` and require an authenticated session u
 | GET | `/posts/:id/comments?cursorCreatedAt=&cursorId=&limit=` | List comments, cursor-paginated |
 | PATCH | `/comments/:id` | Edit (author only) |
 | DELETE | `/comments/:id` | Delete (author only) |
+| POST | `/messages/conversations` | Get-or-create a conversation with a friend (`{friendId}`), 403 if not friends |
+| GET | `/messages/conversations` | List my conversations, most recently active first |
+| GET | `/messages/conversations/:id/messages?cursorCreatedAt=&cursorId=&limit=` | Message history, cursor-paginated (participants only, 404 otherwise) |
+| POST | `/messages/conversations/:id/messages` | Send a message (participants only, friendship re-checked on every send) |
 
-Socket.IO events: `post:created` (server→client, friends-feed audience), `post:created:public` (server→client, discover-feed audience, public posts only), `comment:created` / `comment:updated` / `comment:deleted` (server→client), `post:join` / `post:leave` (client→server, with an ack).
+Socket.IO events: `post:created` (server→client, friends-feed audience), `post:created:public` (server→client, discover-feed audience, public posts only), `comment:created` / `comment:updated` / `comment:deleted` (server→client), `message:created` (server→client), `post:join` / `post:leave` / `conversation:join` / `conversation:leave` (client→server, with an ack).
 
 ## Testing
 
@@ -247,6 +252,7 @@ Targeted, integration-style tests against a real Postgres instance (not mocked �
 - **`posts.visibility.test.ts`** — public/friends/private visibility resolved correctly across owner/friend/stranger viewers.
 - **`feed.test.ts`** — locks in that feed composition (`friends` scope) is scoped to own + friends' posts and excludes a stranger's public post, while `discover` scope includes every public post regardless of friendship.
 - **`ownership.test.ts`** — only the author can edit/delete their posts and comments.
+- **`messages.test.ts`** — messaging is friends-only (rejects starting a conversation with a non-friend), conversation creation is idempotent regardless of who initiates, only participants can read/send, and friendship is re-checked on every send (sending fails immediately once two people un-friend, even in an existing conversation).
 - **`requireAuth.test.ts`** — the auth middleware rejects unauthenticated requests and passes authenticated ones through.
 
 No UI test suite — deliberately out of scope given the timeline; correctness there was verified through manual end-to-end exercising of the running app (see commit history / `CLAUDE.md` for the specifics of what was checked at each stage).

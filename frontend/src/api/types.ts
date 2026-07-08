@@ -102,3 +102,31 @@ export interface CommentsPage {
   comments: Comment[];
   nextCursor: FeedCursor | null;
 }
+
+export interface MessageParticipant {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+export interface Conversation {
+  id: string;
+  otherParticipant: MessageParticipant;
+  lastMessage: { content: string; createdAt: string; senderId: string } | null;
+  createdAt: string;
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+  sender: MessageParticipant;
+}
+
+export interface MessagesPage {
+  messages: Message[];
+  nextCursor: FeedCursor | null;
+}
