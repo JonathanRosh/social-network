@@ -7,6 +7,8 @@ export interface FeedCursor {
   id: string;
 }
 
+export type FeedScope = "friends" | "discover";
+
 const feedAuthorSelect = {
   id: true,
   username: true,
@@ -14,19 +16,27 @@ const feedAuthorSelect = {
   avatarUrl: true,
 } satisfies Prisma.UserSelect;
 
-export async function getFeed(viewerId: string, cursor: FeedCursor | null, limit: number) {
-  const friendIds = await getAcceptedFriendIds(viewerId);
-
-  // Feed composition is deliberately narrower than post *visibility*: a
-  // stranger's public post is viewable if you visit their profile directly,
-  // but it should NOT be pushed into your personalized feed — only your own
-  // posts and your friends' posts belong there, per the assignment spec.
-  const visibilityWhere: Prisma.PostWhereInput = {
-    OR: [
-      { authorId: viewerId },
-      { authorId: { in: friendIds }, visibility: { in: ["public", "friends"] } },
-    ],
-  };
+export async function getFeed(viewerId: string, scope: FeedScope, cursor: FeedCursor | null, limit: number) {
+  // Two distinct, deliberately separate views rather than one algorithm
+  // trying to serve both jobs:
+  //   "friends" — the assignment's required personalized feed: the viewer's
+  //     own posts plus their friends' posts (public or friends-only level).
+  //     A stranger's public post never appears here, even though it's
+  //     viewable if you visit their profile directly — visibility and feed
+  //     composition are different questions.
+  //   "discover" — every public post from anyone, specifically so there's a
+  //     way to find new people to friend without already knowing their
+  //     username. Explicitly not required by the assignment, added for
+  //     practical usability.
+  const visibilityWhere: Prisma.PostWhereInput =
+    scope === "discover"
+      ? { visibility: "public" }
+      : {
+          OR: [
+            { authorId: viewerId },
+            { authorId: { in: await getAcceptedFriendIds(viewerId) }, visibility: { in: ["public", "friends"] } },
+          ],
+        };
 
   // Cursor pagination via (createdAt, id) as a compound "less than" tuple —
   // decomposed into an OR since Prisma has no native tuple comparator.

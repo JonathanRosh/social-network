@@ -58,6 +58,8 @@ export interface Post {
   updatedAt: string;
 }
 
+export type FeedScope = "friends" | "discover";
+
 export interface FeedAuthor {
   id: string;
   username: string;

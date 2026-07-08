@@ -1,4 +1,4 @@
-import type { QueryClient } from "@tanstack/react-query";
+import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import type { FeedPage, FeedPost } from "../api/types.js";
 
 interface InfiniteFeedData {
@@ -7,12 +7,14 @@ interface InfiniteFeedData {
 }
 
 /**
- * Prepend a realtime post:created payload into the feed's first cached page.
- * Dedupes against every already-loaded page (not just the first) so a post
- * that somehow arrives twice — e.g. a reconnect replay — never shows twice.
+ * Prepend a realtime post payload into a feed's first cached page. Dedupes
+ * against every already-loaded page (not just the first) so a post that
+ * somehow arrives twice — e.g. a reconnect replay — never shows twice.
+ * Takes an explicit queryKey since there are now two independent feeds
+ * (["feed", "friends"] and ["feed", "discover"]) with separate caches.
  */
-export function prependFeedPost(queryClient: QueryClient, post: FeedPost) {
-  queryClient.setQueryData<InfiniteFeedData>(["feed"], (old) => {
+export function prependFeedPost(queryClient: QueryClient, queryKey: QueryKey, post: FeedPost) {
+  queryClient.setQueryData<InfiniteFeedData>(queryKey, (old) => {
     if (!old || old.pages.length === 0) return old;
     const alreadyPresent = old.pages.some((page) => page.posts.some((existing) => existing.id === post.id));
     if (alreadyPresent) return old;

@@ -40,8 +40,8 @@ describe("feed composition", () => {
     await prisma.$disconnect();
   });
 
-  it("includes own posts and friends' public/friends-only posts, excludes a stranger's public post and a friend's private post", async () => {
-    const { posts } = await getFeed(viewer.id, null, 20);
+  it("'friends' scope includes own posts and friends' public/friends-only posts, excludes a stranger's public post and a friend's private post", async () => {
+    const { posts } = await getFeed(viewer.id, "friends", null, 20);
     const contents = posts.map((p) => p.content);
 
     expect(contents).toContain("my own post");
@@ -49,5 +49,16 @@ describe("feed composition", () => {
     expect(contents).toContain("friend friends-only");
     expect(contents).not.toContain("friend private");
     expect(contents).not.toContain("stranger public");
+  });
+
+  it("'discover' scope includes every public post regardless of friendship, excludes non-public posts", async () => {
+    const { posts } = await getFeed(viewer.id, "discover", null, 20);
+    const contents = posts.map((p) => p.content);
+
+    expect(contents).toContain("friend public");
+    expect(contents).toContain("stranger public");
+    expect(contents).not.toContain("my own post");
+    expect(contents).not.toContain("friend friends-only");
+    expect(contents).not.toContain("friend private");
   });
 });

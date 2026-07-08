@@ -1,6 +1,6 @@
 # Real-Time Social Network
 
-A full-stack social network built for a take-home assignment: authenticated users, a mutual friends graph, posts with three-tier visibility, a personalized real-time feed, and live comments.
+A full-stack social network built for a take-home assignment: authenticated users, a mutual friends graph, posts with three-tier visibility, a personalized real-time feed (plus a public "Discover" feed for finding new people), and live comments.
 
 ## Tech stack
 
@@ -178,7 +178,9 @@ CREATE UNIQUE INDEX friendships_active_pair_key
 
 — can guarantee, at the database level, that no two *active* rows ever exist for the same pair of people, regardless of who requested or in which direction. This is the real guarantee behind "no duplicate relationships"; an application-level "check first, then insert" would still be racy under concurrent requests. The index is partial (scoped to `pending`/`accepted`) so a declined or cancelled request doesn't permanently block a future one.
 
-**Visibility resolution lives in application code, not the database**, because it depends on *who's asking* (the viewer), which isn't something a static schema constraint can express. `canViewPost(viewerId, post)` is one function, reused identically by the single-post endpoint, the feed query, and the comment-creation check — so "can this person comment on this post" and "does this post show up in their feed" can never silently disagree with each other.
+**Visibility resolution lives in application code, not the database**, because it depends on *who's asking* (the viewer), which isn't something a static schema constraint can express. `canViewPost(viewerId, post)` is one function, reused identically by the single-post endpoint and the comment-creation check.
+
+**Post visibility and feed composition are two different questions, resolved separately.** *Visibility* (public/friends/private) controls who's allowed to see a post if they seek it out directly — e.g. by visiting a profile. *Feed composition* controls whose posts get pushed into a personalized timeline, which the assignment scopes to "the user's posts" + "friends' posts only." A stranger's public post is visible on their profile but must never appear in someone else's main feed just because it's public — conflating these two was an actual bug caught during testing (see `CLAUDE.md`) and fixed by scoping the feed query to `authorId = viewer OR (authorId IN friendIds AND visibility IN (public, friends))`, dropping the "any public post from anyone" branch entirely. The **Discover** tab (see [Real-Time Design](#real-time-design)) is a second, separate view built specifically to still allow finding new people via public posts, without compromising the required feed's correctness.
 
 **Fetching a post you can't see returns 404, not 403**, everywhere in the API. A 403 would leak that a private/friends-only post exists at all to someone who shouldn't even know that; 404 is indistinguishable from "there's nothing here."
 
@@ -201,7 +203,7 @@ CREATE UNIQUE INDEX friendships_active_pair_key
 Socket.IO authenticates using the **same session cookie as REST** — `io.engine.use(sessionMiddleware)` runs the same `express-session` middleware on the WebSocket handshake request itself, so `socket.request.session` is already populated from the browser's existing cookie before the connection is even accepted. There's no second auth mechanism to keep in sync with the first.
 
 - **Comments**: a client joins a `post:<id>` room only while actively viewing that post's comment thread (expanding "Comments" on a post), not for every post in a feed at once. The server re-runs the same visibility check used everywhere else before allowing the join, so a private post's comment stream can't be peeked at just by knowing its ID.
-- **New posts**: fan-out audience exactly mirrors the feed's own visibility rule — `public` posts broadcast to every connected client, `friends` posts go to each accepted friend's personal room, `private` posts go only to the author (so their other open tabs update too).
+- **New posts, two feeds**: the frontend has two tabs on the home page — **Friends** (the assignment's required feed: your own + your friends' posts, cursor-paginated) and **Discover** (every public post from anyone, added specifically so there's a way to find new people to friend without already knowing their username — not required by the assignment, but a real gap without it). Each has its own realtime event, so a public post from a friend correctly lands in both of their feeds and a stranger's public post only ever reaches Discover: `post:created` is emitted to the author's accepted friends' personal rooms (+ the author's own room) for any non-private post; `post:created:public` is additionally broadcast to every connected client, but only when the post is actually public.
 - **No duplicate events, correct ordering.** Every emitted entity carries its real database ID and a server-authoritative `createdAt`. The frontend never trusts socket arrival order — every update (from a REST response *or* a socket event) goes through the same dedupe-by-id-then-resort merge (`frontend/src/utils/commentsCache.ts`, `feedCache.ts`). The server doesn't special-case "don't echo to the sender" — it always emits to everyone in the room including the author, and the client's dedupe makes that a safe no-op. This also correctly handles the same user having multiple tabs open.
 - **Single instance.** No Redis adapter — not needed at this scale, and out of scope for a take-home assignment. The next step for horizontal scaling would be a Redis-backed Socket.IO adapter.
 
@@ -229,13 +231,13 @@ All routes below are prefixed with `/api` and require an authenticated session u
 | GET | `/posts/:id` | Get a single post (visibility-checked, 404 if not viewable) |
 | PATCH | `/posts/:id` | Edit (author only) |
 | DELETE | `/posts/:id` | Delete (author only) |
-| GET | `/feed?cursorCreatedAt=&cursorId=&limit=` | Personalized, cursor-paginated feed |
+| GET | `/feed?scope=friends\|discover&cursorCreatedAt=&cursorId=&limit=` | Cursor-paginated feed; `scope=friends` (default) = own + friends' posts, `scope=discover` = every public post from anyone |
 | POST | `/posts/:id/comments` | Add a comment (post must be visible to you) |
 | GET | `/posts/:id/comments?cursorCreatedAt=&cursorId=&limit=` | List comments, cursor-paginated |
 | PATCH | `/comments/:id` | Edit (author only) |
 | DELETE | `/comments/:id` | Delete (author only) |
 
-Socket.IO events: `post:created` (server→client), `comment:created` / `comment:updated` / `comment:deleted` (server→client), `post:join` / `post:leave` (client→server, with an ack).
+Socket.IO events: `post:created` (server→client, friends-feed audience), `post:created:public` (server→client, discover-feed audience, public posts only), `comment:created` / `comment:updated` / `comment:deleted` (server→client), `post:join` / `post:leave` (client→server, with an ack).
 
 ## Testing
 
@@ -243,6 +245,7 @@ Targeted, integration-style tests against a real Postgres instance (not mocked �
 
 - **`friends.test.ts`** — the full friend-request state machine: self-request rejection, duplicate-while-pending rejection from either direction, only-addressee-can-accept, already-friends rejection, remove-then-refriend, only-requester-can-cancel, decline-then-resend.
 - **`posts.visibility.test.ts`** — public/friends/private visibility resolved correctly across owner/friend/stranger viewers.
+- **`feed.test.ts`** — locks in that feed composition (`friends` scope) is scoped to own + friends' posts and excludes a stranger's public post, while `discover` scope includes every public post regardless of friendship.
 - **`ownership.test.ts`** — only the author can edit/delete their posts and comments.
 - **`requireAuth.test.ts`** — the auth middleware rejects unauthenticated requests and passes authenticated ones through.
 
