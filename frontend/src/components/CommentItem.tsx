@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as commentsApi from "../api/comments.js";
 import type { Comment } from "../api/types.js";
@@ -43,7 +44,9 @@ export function CommentItem({ comment, isOwn }: { comment: Comment; isOwn: boole
   return (
     <div className="flex items-start justify-between gap-2 text-sm">
       <p>
-        <span className="font-medium text-gray-900">{comment.author.displayName}</span>{" "}
+        <Link to={`/profile/${comment.author.username}`} className="font-medium text-gray-900 hover:underline">
+          {comment.author.displayName}
+        </Link>{" "}
         <span className="text-gray-700">{comment.content}</span>
       </p>
       {isOwn && (
