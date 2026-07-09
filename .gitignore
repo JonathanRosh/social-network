@@ -26,3 +26,7 @@ docker-compose.override.yml
 
 # prisma
 backend/prisma/dev.db
+
+# local working notes, not part of the deliverable
+CLAUDE.md
+instructions.md
