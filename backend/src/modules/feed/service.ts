@@ -17,17 +17,12 @@ const feedAuthorSelect = {
 } satisfies Prisma.UserSelect;
 
 export async function getFeed(viewerId: string, scope: FeedScope, cursor: FeedCursor | null, limit: number) {
-  // Two distinct, deliberately separate views rather than one algorithm
-  // trying to serve both jobs:
-  //   "friends" — the assignment's required personalized feed: the viewer's
-  //     own posts plus their friends' posts (public or friends-only level).
-  //     A stranger's public post never appears here, even though it's
-  //     viewable if you visit their profile directly — visibility and feed
-  //     composition are different questions.
-  //   "discover" — every public post from anyone, specifically so there's a
-  //     way to find new people to friend without already knowing their
-  //     username. Explicitly not required by the assignment, added for
-  //     practical usability.
+  // "friends" and "discover" answer different questions and are kept as
+  // separate scopes rather than one query: post *visibility* controls who
+  // can view a post directly (e.g. via a profile), while feed *composition*
+  // controls whose posts get pushed into a timeline. A stranger's public
+  // post is visible on their profile but never appears in "friends" — only
+  // "discover" surfaces posts from people the viewer isn't friends with.
   const visibilityWhere: Prisma.PostWhereInput =
     scope === "discover"
       ? { visibility: "public" }
