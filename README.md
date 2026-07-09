@@ -39,6 +39,7 @@ docker compose up -d postgres
 cd backend
 npm install
 cp .env.example .env
+npx prisma migrate deploy   # this postgres instance is raw/empty — apply the schema before testing against it
 npm test
 ```
 
@@ -46,8 +47,8 @@ npm test
 
 ```bash
 docker compose up -d postgres
-cd backend && npm install && npm run dev     # http://localhost:4000
-cd frontend && npm install && npm run dev    # http://localhost:5173, proxies /api and /socket.io to :4000
+cd backend && npm install && cp .env.example .env && npx prisma migrate deploy && npm run dev   # http://localhost:4000
+cd frontend && npm install && npm run dev                                                        # http://localhost:5173, proxies /api and /socket.io to :4000
 ```
 
 ## Architecture overview
