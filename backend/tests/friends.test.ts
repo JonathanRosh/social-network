@@ -1,8 +1,8 @@
 // Integration-style test: exercises the friendship state machine against a
-// real Postgres instance (via DATABASE_URL / tests/setup.ts), since mocking
-// Prisma's query builder accurately would obscure the actual behavior we
-// care about here (the DB-level duplicate guarantee, ownership checks).
-// Requires the `postgres` service to be reachable — e.g. `docker compose up -d postgres`.
+// real Postgres instance (via DATABASE_URL / tests/setup.ts). Mocking Prisma's
+// query builder would obscure what's actually under test here: the DB-level
+// duplicate guarantee and the ownership checks.
+// Requires the `postgres` service to be reachable, e.g. `docker compose up -d postgres`.
 // Tests run sequentially and share state within the describe block, mirroring
 // the real request/accept/remove lifecycle rather than testing in isolation.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";

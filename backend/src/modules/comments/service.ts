@@ -16,9 +16,7 @@ export interface CommentCursor {
 }
 
 export async function createComment(postId: string, authorId: string, content: string) {
-  // Can only comment on a post you're allowed to see — reuses the exact same
-  // visibility check the feed and single-post view use (getViewablePostOrThrow
-  // 404s rather than 403s if the post isn't visible, same rationale as posts).
+  // Can only comment on a post you're allowed to see. Same 404-not-403 rule as posts.
   await getViewablePostOrThrow(postId, authorId);
   return prisma.comment.create({
     data: { postId, authorId, content },
@@ -48,9 +46,7 @@ export async function deleteComment(commentId: string, userId: string): Promise<
 export async function listComments(postId: string, viewerId: string, cursor: CommentCursor | null, limit: number) {
   await getViewablePostOrThrow(postId, viewerId);
 
-  // Oldest-first (ASC), unlike the feed's newest-first — comment threads
-  // read chronologically. Cursor here means "give me the next batch after
-  // this point", so the comparison direction flips to `>` accordingly.
+  // Oldest first, for chronological reading. Cursor means "after this point", so `>` not `<`.
   const cursorWhere: Prisma.CommentWhereInput | undefined = cursor
     ? {
         OR: [

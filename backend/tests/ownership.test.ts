@@ -1,6 +1,6 @@
 // Integration-style test against real Postgres, same rationale as friends.test.ts.
 // Covers the "only the author may edit/delete" rule for both posts and
-// comments — the assignment's explicit authorization requirement.
+// comments, the assignment's explicit authorization requirement.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { prisma } from "../src/db/prisma.js";
 import { updatePost, deletePost } from "../src/modules/posts/service.js";

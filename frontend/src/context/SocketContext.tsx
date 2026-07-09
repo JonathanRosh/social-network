@@ -6,9 +6,9 @@ const SocketContext = createContext<Socket | null>(null);
 
 /**
  * One shared socket per logged-in session, authenticated via the same
- * session cookie as REST (the server reads it off the handshake request —
+ * session cookie as REST (the server reads it off the handshake request,
  * see backend/src/socket/index.ts). Connects only while authenticated and
- * disconnects on logout, rather than trying to juggle a second auth scheme.
+ * disconnects on logout, so there's no second auth scheme to juggle.
  */
 export function SocketProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();

@@ -12,10 +12,10 @@ interface RequestWithSession extends IncomingMessage {
 let io: Server | undefined;
 
 /**
- * Socket.IO authenticates using the exact same session cookie as REST — no
- * separate token. `io.engine.use` runs the same express-session middleware
- * on the WS handshake request, so `socket.request.session` is populated
- * from the browser's existing cookie before the connection is accepted.
+ * Socket.IO authenticates with the same session cookie as REST, no separate
+ * token. `io.engine.use` runs the same express-session middleware on the WS
+ * handshake request, so `socket.request.session` is populated from the
+ * browser's existing cookie before the connection is accepted.
  */
 export function initSocket(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
@@ -38,9 +38,8 @@ export function initSocket(httpServer: HttpServer): Server {
     const userId = socket.data.userId as string;
     socket.join(`user:${userId}`);
 
-    // A client can only join a post's comment room if it can currently see
-    // that post — otherwise a private/friends-only post's comment stream
-    // could leak to someone who shouldn't see it exists.
+    // A client can only join a post's comment room if it can currently see that
+    // post, otherwise a private/friends-only post's comments could leak.
     socket.on("post:join", async (postId: unknown, ack?: (ok: boolean) => void) => {
       if (typeof postId !== "string") {
         ack?.(false);
@@ -61,9 +60,8 @@ export function initSocket(httpServer: HttpServer): Server {
       }
     });
 
-    // Same pattern as post:join — only an actual participant can join a
-    // conversation's room, re-checked on every join rather than trusted
-    // from whenever the conversation was first created.
+    // Same pattern as post:join: only an actual participant can join a
+    // conversation's room, re-checked on every join, not just at creation.
     socket.on("conversation:join", async (conversationId: unknown, ack?: (ok: boolean) => void) => {
       if (typeof conversationId !== "string") {
         ack?.(false);
@@ -89,6 +87,6 @@ export function initSocket(httpServer: HttpServer): Server {
 }
 
 export function getIo(): Server {
-  if (!io) throw new Error("Socket.IO not initialized — call initSocket first");
+  if (!io) throw new Error("Socket.IO not initialized, call initSocket first");
   return io;
 }

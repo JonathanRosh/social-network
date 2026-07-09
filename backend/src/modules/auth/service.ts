@@ -44,7 +44,7 @@ export async function getUserById(id: string): Promise<User | null> {
   return prisma.user.findUnique({ where: { id } });
 }
 
-/** Shape returned for the currently authenticated user (includes email — never expose this for other users' profiles). */
+/** Shape returned for the currently authenticated user. Includes email; never expose this for other users' profiles. */
 export function toSessionUser(user: User) {
   return {
     id: user.id,

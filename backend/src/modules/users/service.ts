@@ -2,7 +2,7 @@ import type { User } from "@prisma/client";
 import { prisma } from "../../db/prisma.js";
 import { getRelationshipStatus } from "../friends/service.js";
 
-/** Shape returned for someone else's profile — never includes email. */
+/** Shape returned for someone else's profile. Never includes email. */
 export function toPublicProfile(user: User) {
   return {
     id: user.id,

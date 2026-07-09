@@ -7,14 +7,13 @@ export const createPost = asyncHandler(async (req, res) => {
   const post = await service.createPost(req.session.userId!, req.body);
   res.status(201).json({ post });
 
-  // Fan out after responding — doesn't block the requester on socket work.
-  // Two distinct events for the two distinct feeds (see feed/service.ts):
-  //   "post:created" — the friends-feed audience: friends of the author plus
-  //     the author's own other tabs. Sent for any non-private post.
-  //   "post:created:public" — the discover-feed audience: literally everyone
-  //     connected, sent only when the post is actually public. A friend
-  //     receives both for a friend's public post, correctly landing it in
-  //     both of their feeds; a stranger only ever receives the second one.
+  // Fan out after responding so the requester isn't blocked on socket work.
+  // Two events for the two feeds (see feed/service.ts):
+  //   "post:created" - friends-feed audience: the author's friends plus their
+  //     own other tabs. Sent for any non-private post.
+  //   "post:created:public" - discover-feed audience: everyone connected,
+  //     only when the post is actually public. A friend gets both events for
+  //     a friend's public post; a stranger only ever gets the second one.
   const io = getIo();
   if (post.visibility === "private") {
     io.to(`user:${post.authorId}`).emit("post:created", post);

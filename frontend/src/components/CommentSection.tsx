@@ -18,11 +18,10 @@ export function CommentSection({ postId }: { postId: string }) {
     queryFn: () => commentsApi.listComments(postId),
   });
 
-  // Join the post's comment room only while this section is mounted (i.e.
-  // expanded) — joining a room for every post in the feed at once would be
-  // wasteful. The server re-checks visibility on every join (see
-  // backend/src/socket/index.ts), so this can't be used to peek at a post
-  // this viewer isn't otherwise allowed to see.
+  // Join the post's comment room only while this section is expanded; joining
+  // a room for every post in the feed at once would be wasteful. The server
+  // re-checks visibility on every join (see backend/src/socket/index.ts), so
+  // this can't be used to peek at a post the viewer isn't allowed to see.
   useEffect(() => {
     if (!socket) return;
 

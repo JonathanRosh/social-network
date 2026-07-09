@@ -1,8 +1,8 @@
 // Integration-style test against real Postgres, same rationale as friends.test.ts.
-// Locks in feed *composition* (whose posts appear) as distinct from post
-// *visibility* (who's allowed to view a post directly) — a stranger's public
-// post is viewable on their profile but must never appear in someone else's
-// feed just because it's public.
+// Locks in feed composition (whose posts appear) as distinct from post
+// visibility (who's allowed to view a post directly). A stranger's public post
+// is viewable on their profile but must never appear in someone else's feed
+// just because it's public.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { prisma } from "../src/db/prisma.js";
 import { getFeed } from "../src/modules/feed/service.js";

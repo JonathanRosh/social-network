@@ -21,7 +21,7 @@ export interface MessageCursor {
   id: string;
 }
 
-/** Messaging is friends-only — re-checked here, and again on every send, in
+/** Messaging is friends-only, re-checked here and again on every send in
  * case the friendship ends after the conversation already exists. */
 export async function getOrCreateConversation(userId: string, friendId: string): Promise<Conversation> {
   if (userId === friendId) {
@@ -52,9 +52,8 @@ export async function getOrCreateConversation(userId: string, friendId: string):
 
 export async function getConversationOrThrow(conversationId: string, viewerId: string): Promise<Conversation> {
   const conversation = await prisma.conversation.findUnique({ where: { id: conversationId } });
-  // 404 (not 403) whether the conversation doesn't exist or the viewer just
-  // isn't a participant — same rationale as posts: don't confirm that a
-  // conversation between two other people exists at all.
+  // 404, not 403, whether the conversation doesn't exist or the viewer isn't a
+  // participant. Same rationale as posts: don't confirm it exists at all.
   if (!conversation || (conversation.userLowId !== viewerId && conversation.userHighId !== viewerId)) {
     throw new HttpError(404, "Conversation not found");
   }
@@ -87,8 +86,7 @@ export async function listMessages(
 ) {
   await getConversationOrThrow(conversationId, viewerId);
 
-  // Oldest-first, same cursor-pagination shape as comments (">" not "<" —
-  // "give me what comes after this point", for chronological thread reading).
+  // Oldest first, same cursor shape as comments: "after this point", so `>` not `<`.
   const cursorWhere: Prisma.MessageWhereInput | undefined = cursor
     ? {
         OR: [
@@ -136,10 +134,9 @@ export async function listConversations(userId: string) {
     };
   });
 
-  // Most recently active conversation first; a conversation with no messages
-  // yet falls back to when it was created. Sorted in application code rather
-  // than the DB since Prisma has no "order by latest related row" clause
-  // without dropping to raw SQL, and this list is never large enough to matter.
+  // Most recently active first, falling back to createdAt if there's no message yet.
+  // Sorted in application code: Prisma has no "order by latest related row" clause
+  // short of raw SQL, and this list is never large enough for it to matter.
   shaped.sort((a, b) => {
     const aTime = (a.lastMessage?.createdAt ?? a.createdAt).getTime();
     const bTime = (b.lastMessage?.createdAt ?? b.createdAt).getTime();

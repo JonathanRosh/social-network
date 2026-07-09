@@ -17,12 +17,9 @@ const feedAuthorSelect = {
 } satisfies Prisma.UserSelect;
 
 export async function getFeed(viewerId: string, scope: FeedScope, cursor: FeedCursor | null, limit: number) {
-  // "friends" and "discover" answer different questions and are kept as
-  // separate scopes rather than one query: post *visibility* controls who
-  // can view a post directly (e.g. via a profile), while feed *composition*
-  // controls whose posts get pushed into a timeline. A stranger's public
-  // post is visible on their profile but never appears in "friends" — only
-  // "discover" surfaces posts from people the viewer isn't friends with.
+  // Visibility (who can view a post directly) and feed composition (whose posts
+  // land in a timeline) are different questions. A stranger's public post is
+  // visible on their profile but stays out of "friends"; only "discover" shows it.
   const visibilityWhere: Prisma.PostWhereInput =
     scope === "discover"
       ? { visibility: "public" }
@@ -33,11 +30,9 @@ export async function getFeed(viewerId: string, scope: FeedScope, cursor: FeedCu
           ],
         };
 
-  // Cursor pagination via (createdAt, id) as a compound "less than" tuple —
-  // decomposed into an OR since Prisma has no native tuple comparator.
-  // Chosen over offset pagination specifically because this is a *live* feed:
-  // offset pagination duplicates/skips items when new posts land between
-  // page fetches, which cursor pagination is immune to.
+  // (createdAt, id) tuple comparison, decomposed into an OR since Prisma has no
+  // tuple comparator. Cursor pagination over offset because this is a live feed:
+  // offset pagination duplicates or skips items when new posts land mid-fetch.
   const cursorWhere: Prisma.PostWhereInput | undefined = cursor
     ? {
         OR: [

@@ -14,7 +14,7 @@ const visibilityLabel: Record<PostVisibility, string> = {
 interface PostCardProps {
   post: Post;
   isOwn: boolean;
-  /** Username this post belongs to — used to invalidate that profile's post list. */
+  /** Username this post belongs to, used to invalidate that profile's post list. */
   authorUsername: string;
   /** When provided, renders an author header linking to their profile (feed context). */
   authorDisplayName?: string;

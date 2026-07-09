@@ -18,9 +18,8 @@ export async function sendFriendRequest(requesterId: string, addresseeId: string
 
   const [userLowId, userHighId] = normalizedPair(requesterId, addresseeId);
 
-  // Belt-and-suspenders: this check avoids a wasted round trip in the common
-  // case, but the actual guarantee against duplicates is the DB's partial
-  // unique index (friendships_active_pair_key) — see the catch block below.
+  // Saves a round trip in the common case. The real guarantee against
+  // duplicates is the DB's partial unique index; see the catch block below.
   const existing = await prisma.friendship.findFirst({
     where: { userLowId, userHighId, status: { in: ["pending", "accepted"] } },
   });
@@ -87,9 +86,8 @@ export async function removeFriend(userId: string, otherUserId: string): Promise
   if (!friendship) {
     throw new HttpError(404, "You are not friends with this user");
   }
-  // Deleting (rather than marking a terminal status) fully severs the
-  // relationship and frees the partial unique index, so a fresh request
-  // can be sent later with no leftover history in the way.
+  // Deleted, not marked terminal, so the unique index frees up and a fresh
+  // request can be sent later without leftover history in the way.
   await prisma.friendship.delete({ where: { id: friendship.id } });
 }
 

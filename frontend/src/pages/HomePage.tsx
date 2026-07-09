@@ -43,9 +43,8 @@ export function HomePage() {
 
   // Live updates for both feeds at once (regardless of which tab is active),
   // so switching tabs never shows stale data. The server sends two distinct
-  // events for the two distinct audiences — see
-  // backend/src/modules/posts/controller.ts — so there's no ambiguity about
-  // which cache a given event belongs to.
+  // events for the two distinct audiences (see backend/src/modules/posts/controller.ts),
+  // so there's no ambiguity about which cache a given event belongs to.
   useEffect(() => {
     if (!socket) return;
 

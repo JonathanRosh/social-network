@@ -50,7 +50,16 @@ This builds and starts three containers: the database, the backend, and the fron
 
 Go to [http://localhost:3000](http://localhost:3000) in your browser.
 
-**5. Stop it.**
+**5. Try it out.**
+
+The database starts empty, so register a couple of accounts to see the app actually working. The email field isn't verified, so any value in the right format works, e.g. `hank@example.com`. Two accounts to try:
+
+- `hank` / `password123`
+- `gina` / `password123`
+
+Log in as one, send a friend request to the other, then log in as the other (in a private/incognito window, or after logging out) to accept it. Once friends, you can post with different visibility settings, comment, and message each other, and see updates arrive live if you have both accounts open in separate windows at once.
+
+**6. Stop it.**
 
 Press `Ctrl+C` in the terminal running it, or open a second terminal in the same folder and run:
 

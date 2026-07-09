@@ -36,7 +36,7 @@ export function ConversationPage() {
   });
   const isFriends = otherProfileQuery.data?.user.relationship === "friends";
 
-  // Join the conversation's room only while this thread is open — the server
+  // Join the conversation's room only while this thread is open. The server
   // re-checks participant membership on every join (same pattern as post
   // comment rooms), so this can't be used to peek at someone else's DMs.
   useEffect(() => {
@@ -66,8 +66,8 @@ export function ConversationPage() {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
     onError: () => {
-      // The friendship may have just ended in a way we hadn't refetched yet —
-      // refresh the profile so the "you need to be friends" banner appears
+      // The friendship may have just ended in a way we hadn't refetched yet.
+      // Refresh the profile so the "you need to be friends" banner appears
       // immediately instead of only on the next successful poll.
       queryClient.invalidateQueries({ queryKey: ["profile", otherUsername] });
     },

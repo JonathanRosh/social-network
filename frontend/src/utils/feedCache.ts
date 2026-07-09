@@ -9,8 +9,8 @@ interface InfiniteFeedData {
 /**
  * Prepend a realtime post payload into a feed's first cached page. Dedupes
  * against every already-loaded page (not just the first) so a post that
- * somehow arrives twice — e.g. a reconnect replay — never shows twice.
- * Takes an explicit queryKey since there are now two independent feeds
+ * somehow arrives twice, e.g. a reconnect replay, never shows twice.
+ * Takes an explicit queryKey since there are two independent feeds
  * (["feed", "friends"] and ["feed", "discover"]) with separate caches.
  */
 export function prependFeedPost(queryClient: QueryClient, queryKey: QueryKey, post: FeedPost) {

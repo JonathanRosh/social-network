@@ -1,7 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Message, MessagesPage } from "../api/types.js";
 
-/** Same dedupe-by-id-then-resort merge as commentsCache.ts — used by both the
+/** Same dedupe-by-id-then-resort merge as commentsCache.ts. Used by both the
  * socket handler and the send mutation's own success, so they converge safely. */
 export function upsertMessage(queryClient: QueryClient, conversationId: string, message: Message) {
   queryClient.setQueryData<MessagesPage>(["messages", conversationId], (old) => {

@@ -11,9 +11,8 @@ const postAuthorSelect = {
 } satisfies Prisma.UserSelect;
 
 export async function createPost(authorId: string, data: { content: string; visibility: PostVisibility }) {
-  // Includes the author (safe fields only) so the realtime post:created
-  // payload and the REST response both already match the feed's shape —
-  // no extra round trip needed on either the emitting client or recipients.
+  // Includes the author (safe fields only) so the realtime payload and the REST
+  // response both already match the feed's shape, with no extra round trip needed.
   return prisma.post.create({
     data: { authorId, ...data },
     include: { author: { select: postAuthorSelect } },
@@ -30,9 +29,8 @@ export async function canViewPost(viewerId: string, post: Post): Promise<boolean
 
 export async function getViewablePostOrThrow(postId: string, viewerId: string): Promise<Post> {
   const post = await prisma.post.findUnique({ where: { id: postId } });
-  // 404 (not 403) whether the post doesn't exist or simply isn't visible to
-  // this viewer — deliberately avoids leaking that a private/friends-only
-  // post exists at all to someone who can't see it.
+  // 404, not 403, whether the post doesn't exist or just isn't visible to this
+  // viewer. Avoids confirming a private/friends-only post exists at all.
   if (!post || !(await canViewPost(viewerId, post))) {
     throw new HttpError(404, "Post not found");
   }
