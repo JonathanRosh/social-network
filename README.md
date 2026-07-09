@@ -38,7 +38,7 @@ The backend's targeted test suite (see [Testing](#testing)) needs a reachable Po
 docker compose up -d postgres
 cd backend
 npm install
-cp .env.example .env   # then edit DATABASE_URL to point at localhost:5432, see comments in the file
+cp .env.example .env
 npm test
 ```
 
